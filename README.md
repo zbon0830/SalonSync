@@ -10,8 +10,8 @@ to a moderated community feed.
 ## Team Members
 
 - Angela Nano — Product Manager / Developer
-- Zach — Scrum Master / Developer
-- Kaden — Developer
+- Zachary Bon — Scrum Master / Developer
+- Kaden Jones — Developer
 
 ## Tech Stack
 
