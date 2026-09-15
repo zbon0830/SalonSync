@@ -2,7 +2,7 @@
 
 Structured color-formula notetaking for professional hairstylists.
 Stylists record the brand, shades, developer, and timing behind every
-client color service — searchable, private by default, and shareable
+client color service — searchable, public, and shareable
 to a moderated community feed.
 
 **Course:** CEN 3031 — Fall 2026, Section 10706
