@@ -10,8 +10,8 @@ to a moderated community feed.
 ## Team Members
 
 - Angela Nano — Product Manager / Developer
-- Zach — Scrum Master / Developer
-- Kaden — Developer
+- Zach Bon — Scrum Master / Developer
+- Kaden Jones — Developer
 
 ## Tech Stack
 
@@ -19,7 +19,7 @@ React · Node.js/Express · PostgreSQL · GitHub Actions (CI)
 
 ## Project Status
 
-🚧 Iteration 1 — Planning & Design. See the [Sprint Board](PASTE-BOARD-URL-HERE).
+🚧 Iteration 1 — Planning & Design. See the (https://github.com/users/zbon0830/projects/1/views/2). 
 
 ## Getting Started
 
