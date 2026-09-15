@@ -15,7 +15,7 @@ to a moderated community feed.
 
 ## Tech Stack
 
-React · Node.js/Express · PostgreSQL · GitHub Actions (CI)
+React · Python/Flask · PostgreSQL · GitHub Actions (CI)
 
 ## Project Status
 
