@@ -166,32 +166,3 @@ def test_list_notes_returns_only_own_notes(client, auth_header):
     assert len(notes) >= 2
     for n in notes:
         assert n["author_username"] == "jsmith_color"
-
-def test_update_note_success(client, auth_header):
-    """TC-NOTE-02: Successfully update an existing note."""
-    create_res = client.post("/api/notes", json={
-        "title": "Original Title",
-        "brand": "Redken",
-        "shades": "7N",
-        "developer": "20 vol",
-        "processing_time": 30
-    }, headers=auth_header)
-    note_id = create_res.get_json()["note"]["id"]
-
-    update_res = client.put(f"/api/notes/{note_id}", json={
-        "title": "Updated Title - Follow-up Adjustment",
-        "brand": "Wella",
-        "shades": "8N",
-        "developer": "10 vol",
-        "processing_time": 25,
-        "notes": "Adjusted after follow-up",
-        "is_public": True
-    }, headers=auth_header)
-
-    assert update_res.status_code == 200
-    data = update_res.get_json()
-    assert data["message"] == "Formula note updated successfully"
-    assert data["note"]["title"] == "Updated Title - Follow-up Adjustment"
-    assert data["note"]["brand"] == "Wella"
-    assert data["note"]["notes"] == "Adjusted after follow-up"
-    assert data["note"]["is_public"] is True

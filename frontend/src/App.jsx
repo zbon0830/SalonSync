@@ -41,7 +41,6 @@ export default function App() {
   // Notes state
   const [notes, setNotes] = useState([]);
   const [showNoteForm, setShowNoteForm] = useState(false);
-  const [editingNoteId, setEditingNoteId] = useState(null);
 
   // New Note Form fields
   const [noteTitle, setNoteTitle] = useState('');
@@ -217,7 +216,7 @@ export default function App() {
     }
   };
 
-    const handleSaveNoteSubmit = async (e) => {
+  const handleCreateNoteSubmit = async (e) => {
     e.preventDefault();
     setErrorMessage('');
     setSuccessMessage('');
@@ -247,12 +246,9 @@ export default function App() {
 
     setLoading(true);
 
-    const url = editingNoteId ? `/api/notes/${editingNoteId}` : '/api/notes';
-    const method = editingNoteId ? 'PUT' : 'POST';
-
     try {
-      const response = await fetch(url, {
-        method: method,
+      const response = await fetch('/api/notes', {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
@@ -271,16 +267,12 @@ export default function App() {
       const data = await response.json();
 
       if (!response.ok) {
-        setErrorMessage(data.error || 'Failed to save note.');
+        setErrorMessage(data.error || 'Failed to create note.');
       } else {
-        setSuccessMessage(editingNoteId ? 'Formula note updated successfully!' : 'Formula note created successfully!');
-        if (editingNoteId) {
-          setNotes(notes.map((n) => (n.id === editingNoteId ? data.note : n)));
-        } else {
-          setNotes([data.note, ...notes]);
-        }
+        setSuccessMessage('Formula note created successfully!');
+        setNotes([data.note, ...notes]);
         setShowNoteForm(false);
-        setEditingNoteId(null);
+        // Reset form
         setNoteTitle('');
         setNoteShades('');
         setNoteInstructions('');
@@ -294,20 +286,6 @@ export default function App() {
     }
   };
 
-  const handleEditClick = (note) => {
-    setEditingNoteId(note.id);
-    setNoteTitle(note.title);
-    setNoteBrand(note.brand);
-    setNoteShades(note.shades);
-    setNoteDeveloper(note.developer);
-    setNoteProcessingTime(String(note.processing_time));
-    setNoteInstructions(note.notes || '');
-    setNoteIsPublic(note.is_public);
-    setShowNoteForm(true);
-    setErrorMessage('');
-    setSuccessMessage('');
-    setFieldErrors({});
-  };
   return (
     <div className="container">
       <div className="brand-header">
@@ -327,24 +305,7 @@ export default function App() {
               <button
                 type="button"
                 className="btn-secondary"
-                onClick={() => {
-                  if (showNoteForm && editingNoteId === null) {
-                    setShowNoteForm(false);
-                  } else {
-                    setEditingNoteId(null);
-                    setNoteTitle('');
-                    setNoteBrand('Redken');
-                    setNoteShades('');
-                    setNoteDeveloper('20 vol');
-                    setNoteProcessingTime('35');
-                    setNoteInstructions('');
-                    setNoteIsPublic(false);
-                    setShowNoteForm(true);
-                  }
-                  setErrorMessage('');
-                  setSuccessMessage('');
-                  setFieldErrors({});
-                }}
+                onClick={() => { setShowNoteForm(!showNoteForm); setErrorMessage(''); setSuccessMessage(''); setFieldErrors({}); }}
               >
                 {showNoteForm ? 'Close Form' : 'New note'}
               </button>
@@ -374,8 +335,8 @@ export default function App() {
           {/* New Formula Note Form (US-4) */}
           {showNoteForm && (
             <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '8px', border: '1px solid #cbd5e0', marginBottom: '20px' }}>
-              <h2 style={{ fontSize: '16px', marginBottom: '14px', color: '#2b6cb0' }}>{editingNoteId ? 'Edit Formula Note' : 'Create Formula Note'}</h2>
-              <form onSubmit={handleSaveNoteSubmit} noValidate>
+              <h2 style={{ fontSize: '16px', marginBottom: '14px', color: '#2b6cb0' }}>Create Formula Note</h2>
+              <form onSubmit={handleCreateNoteSubmit} noValidate>
                 <div className="form-group">
                   <label htmlFor="note-title">Client / Title *</label>
                   <input
@@ -521,19 +482,6 @@ export default function App() {
                         {n.notes}
                       </div>
                     )}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '8px' }}>
-                    <div className="note-details">
-                      Created by {n.author_username}
-                    </div>
-                    <button
-                      type="button"
-                      className="btn-secondary"
-                      style={{ padding: '2px 8px', fontSize: '12px' }}
-                      onClick={() => handleEditClick(n)}
-                    >
-                      Edit
-                    </button>
-                  </div>
                     <div className="note-details" style={{ marginTop: '6px' }}>
                       Created by {n.author_username}
                     </div>
