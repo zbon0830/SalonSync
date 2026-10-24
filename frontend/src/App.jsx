@@ -41,6 +41,9 @@ export default function App() {
   // Notes state
   const [notes, setNotes] = useState([]);
   const [showNoteForm, setShowNoteForm] = useState(false);
+  const [editingNoteId, setEditingNoteId] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [brandFilter, setBrandFilter] = useState('All');
 
   // New Note Form fields
   const [noteTitle, setNoteTitle] = useState('');
@@ -77,9 +80,13 @@ export default function App() {
     }
   };
 
-  const fetchNotes = async (authToken) => {
+  const fetchNotes = async (authToken, search = '', brand = '') => {
     try {
-      const res = await fetch('/api/notes', {
+      const params = new URLSearchParams();
+      if (search) params.append('q', search);
+      if (brand && brand !== 'All') params.append('brand', brand);
+
+      const res = await fetch(`/api/notes?${params.toString()}`, {
         headers: { 'Authorization': `Bearer ${authToken}` },
       });
       if (res.ok) {
@@ -216,7 +223,7 @@ export default function App() {
     }
   };
 
-  const handleCreateNoteSubmit = async (e) => {
+    const handleSaveNoteSubmit = async (e) => {
     e.preventDefault();
     setErrorMessage('');
     setSuccessMessage('');
@@ -246,9 +253,12 @@ export default function App() {
 
     setLoading(true);
 
+    const url = editingNoteId ? `/api/notes/${editingNoteId}` : '/api/notes';
+    const method = editingNoteId ? 'PUT' : 'POST';
+
     try {
-      const response = await fetch('/api/notes', {
-        method: 'POST',
+      const response = await fetch(url, {
+        method: method,
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
@@ -267,12 +277,16 @@ export default function App() {
       const data = await response.json();
 
       if (!response.ok) {
-        setErrorMessage(data.error || 'Failed to create note.');
+        setErrorMessage(data.error || 'Failed to save note.');
       } else {
-        setSuccessMessage('Formula note created successfully!');
-        setNotes([data.note, ...notes]);
+        setSuccessMessage(editingNoteId ? 'Formula note updated successfully!' : 'Formula note created successfully!');
+        if (editingNoteId) {
+          setNotes(notes.map((n) => (n.id === editingNoteId ? data.note : n)));
+        } else {
+          setNotes([data.note, ...notes]);
+        }
         setShowNoteForm(false);
-        // Reset form
+        setEditingNoteId(null);
         setNoteTitle('');
         setNoteShades('');
         setNoteInstructions('');
@@ -286,6 +300,49 @@ export default function App() {
     }
   };
 
+  const handleDeleteNote = async (noteId) => {
+    if (!window.confirm('Are you sure you want to delete this note? This cannot be undone.')) {
+      return;
+    }
+
+    setErrorMessage('');
+    setSuccessMessage('');
+
+    try {
+      const response = await fetch(`/api/notes/${noteId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setErrorMessage(data.error || 'Failed to delete note.');
+      } else {
+        setSuccessMessage('Formula note deleted successfully!');
+        setNotes(notes.filter((n) => n.id !== noteId));
+      }
+    } catch (err) {
+      setErrorMessage('Network error: unable to delete note.');
+    }
+  };
+
+  const handleEditClick = (note) => {
+    setEditingNoteId(note.id);
+    setNoteTitle(note.title);
+    setNoteBrand(note.brand);
+    setNoteShades(note.shades);
+    setNoteDeveloper(note.developer);
+    setNoteProcessingTime(String(note.processing_time));
+    setNoteInstructions(note.notes || '');
+    setNoteIsPublic(note.is_public);
+    setShowNoteForm(true);
+    setErrorMessage('');
+    setSuccessMessage('');
+    setFieldErrors({});
+  };
   return (
     <div className="container">
       <div className="brand-header">
@@ -305,7 +362,24 @@ export default function App() {
               <button
                 type="button"
                 className="btn-secondary"
-                onClick={() => { setShowNoteForm(!showNoteForm); setErrorMessage(''); setSuccessMessage(''); setFieldErrors({}); }}
+                onClick={() => {
+                  if (showNoteForm && editingNoteId === null) {
+                    setShowNoteForm(false);
+                  } else {
+                    setEditingNoteId(null);
+                    setNoteTitle('');
+                    setNoteBrand('Redken');
+                    setNoteShades('');
+                    setNoteDeveloper('20 vol');
+                    setNoteProcessingTime('35');
+                    setNoteInstructions('');
+                    setNoteIsPublic(false);
+                    setShowNoteForm(true);
+                  }
+                  setErrorMessage('');
+                  setSuccessMessage('');
+                  setFieldErrors({});
+                }}
               >
                 {showNoteForm ? 'Close Form' : 'New note'}
               </button>
@@ -335,8 +409,8 @@ export default function App() {
           {/* New Formula Note Form (US-4) */}
           {showNoteForm && (
             <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '8px', border: '1px solid #cbd5e0', marginBottom: '20px' }}>
-              <h2 style={{ fontSize: '16px', marginBottom: '14px', color: '#2b6cb0' }}>Create Formula Note</h2>
-              <form onSubmit={handleCreateNoteSubmit} noValidate>
+              <h2 style={{ fontSize: '16px', marginBottom: '14px', color: '#2b6cb0' }}>{editingNoteId ? 'Edit Formula Note' : 'Create Formula Note'}</h2>
+              <form onSubmit={handleSaveNoteSubmit} noValidate>
                 <div className="form-group">
                   <label htmlFor="note-title">Client / Title *</label>
                   <input
@@ -460,6 +534,32 @@ export default function App() {
               Formula Notes ({notes.length})
             </h2>
 
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+              <input
+                type="text"
+                placeholder="Search by client/title or shades..."
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  fetchNotes(token, e.target.value, brandFilter);
+                }}
+                style={{ flex: 1, padding: '8px', fontSize: '13px' }}
+              />
+              <select
+                value={brandFilter}
+                onChange={(e) => {
+                  setBrandFilter(e.target.value);
+                  fetchNotes(token, searchQuery, e.target.value);
+                }}
+                style={{ padding: '8px', fontSize: '13px' }}
+              >
+                <option value="All">All Brands</option>
+                {DEFAULT_BRANDS.map((b) => (
+                  <option key={b} value={b}>{b}</option>
+                ))}
+              </select>
+            </div>
+
             {notes.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '30px 10px', color: '#718096', fontSize: '13.5px', background: '#f8fafc', borderRadius: '6px', border: '1px dashed #cbd5e0' }}>
                 No notes yet. Click <strong>"New note"</strong> to create your first color formula.
@@ -482,9 +582,27 @@ export default function App() {
                         {n.notes}
                       </div>
                     )}
-                    <div className="note-details" style={{ marginTop: '6px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '8px' }}>
+                    <div className="note-details">
                       Created by {n.author_username}
                     </div>
+                    <button
+                      type="button"
+                      className="btn-secondary"
+                      style={{ padding: '2px 8px', fontSize: '12px' }}
+                      onClick={() => handleEditClick(n)}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-secondary"
+                      style={{ padding: '2px 8px', fontSize: '12px', color: '#c53030' }}
+                      onClick={() => handleDeleteNote(n.id)}
+                    >
+                      Delete
+                    </button>
+                  </div>
                   </div>
                 ))}
               </div>
