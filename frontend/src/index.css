@@ -245,3 +245,43 @@ body {
   color: #718096;
   font-style: italic;
 }
+
+/* Feed View Styles */
+.feed-view {
+  padding: 1rem 0;
+}
+
+.feed-subtitle {
+  color: #666;
+  margin-bottom: 1.5rem;
+  font-size: 0.95rem;
+}
+
+.note-card-public {
+  border-left: 4px solid #2ecc71;
+}
+
+.note-author {
+  color: #888;
+  font-size: 0.85rem;
+  font-style: italic;
+}
+
+.note-date {
+  color: #aaa;
+  font-size: 0.8rem;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 3rem;
+  color: #888;
+  font-size: 1.1rem;
+  background: #f9f9f9;
+  border-radius: 8px;
+}
+
+.tab-btn.active {
+  background: #667eea;
+  color: white;
+}
