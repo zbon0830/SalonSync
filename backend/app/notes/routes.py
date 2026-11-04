@@ -213,3 +213,12 @@ def delete_note(current_user, note_id):
         return jsonify({"error": "An error occurred while deleting the formula note"}), 500
 
     return jsonify({"message": "Formula note deleted successfully"}), 200
+
+
+@notes.get("/feed")
+def get_public_feed():
+    """US-9: Return all publicly shared notes, newest first."""
+    public_notes = Note.query.filter_by(is_public=True).order_by(Note.created_at.desc()).all()
+    return jsonify({
+        "notes": [n.to_dict() for n in public_notes]
+    }), 200
