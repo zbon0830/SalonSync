@@ -215,6 +215,38 @@ def delete_note(current_user, note_id):
     return jsonify({"message": "Formula note deleted successfully"}), 200
 
 
+@notes.patch("/<int:note_id>/share")
+@token_required
+def toggle_share(current_user, note_id):
+    """US-8: Toggle a note's public visibility. Accepts {is_public: bool}."""
+    note = Note.query.get_or_404(note_id)
+
+    if note.user_id != current_user.id:
+        return jsonify({"error": "Unauthorized to modify this note"}), 403
+
+    data = request.get_json(silent=True)
+    if not data or not isinstance(data, dict) or "is_public" not in data:
+        return jsonify({"error": "Request body must include is_public boolean"}), 400
+
+    try:
+        new_value = bool(data["is_public"])
+    except (TypeError, ValueError):
+        return jsonify({"error": "is_public must be a boolean"}), 400
+
+    note.is_public = new_value
+
+    try:
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        return jsonify({"error": "An error occurred while updating share status"}), 500
+
+    return jsonify({
+        "message": "Note share status updated",
+        "note": note.to_dict()
+    }), 200
+
+
 @notes.get("/feed")
 def get_public_feed():
     """US-9: Return all publicly shared notes, newest first."""
