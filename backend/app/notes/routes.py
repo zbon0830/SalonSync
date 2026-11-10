@@ -250,7 +250,14 @@ def toggle_share(current_user, note_id):
 @notes.get("/feed")
 def get_public_feed():
     """US-9: Return all publicly shared notes, newest first."""
-    public_notes = Note.query.filter_by(is_public=True).order_by(Note.created_at.desc()).all()
+    query = Note.query.filter_by(is_public=True)
+    brand = request.args.get("brand", "").strip()
+    shade = request.args.get("shade", "").strip()
+    if brand and brand != "All":
+        query = query.filter(Note.brand == brand)
+    if shade:
+        query = query.filter(Note.shades.ilike(f"%{shade}%"))
+    public_notes = query.order_by(Note.created_at.desc()).all()
     return jsonify({
         "notes": [n.to_dict() for n in public_notes]
     }), 200

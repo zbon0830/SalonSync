@@ -60,12 +60,17 @@ export default function App() {
   const [feedNotes, setFeedNotes] = useState([]);
   const [feedLoading, setFeedLoading] = useState(false);
   const [currentView, setCurrentView] = useState('my-notes');
+  const [feedBrand, setFeedBrand] = useState('All');
+  const [feedShade, setFeedShade] = useState('');
 
 
-  const fetchFeed = async () => {
+  const fetchFeed = async (brand = feedBrand, shade = feedShade) => {
     setFeedLoading(true);
     try {
-      const res = await fetch('/api/notes/feed');
+      const params = new URLSearchParams();
+      if (brand && brand !== 'All') params.append('brand', brand);
+      if (shade) params.append('shade', shade);
+      const res = await fetch(`/api/notes/feed?${params.toString()}`);
       if (res.ok) {
         const data = await res.json();
         setFeedNotes(data.notes || []);
@@ -568,11 +573,40 @@ export default function App() {
             </div>
           )}
 
-          
+            <div style={{ display: 'flex', gap: '8px', marginTop: '16px' }}>
+              <button type="button" onClick={() => setCurrentView('my-notes')}>My Notes</button>
+              <button type="button" onClick={() => { setCurrentView('feed'); fetchFeed(); }}>Community Feed</button>
+            </div>
+
             {currentView === 'feed' && (
               <div className="feed-view">
                 <h2>Community Formula Feed</h2>
                 <p className="feed-subtitle">Discover techniques shared by other stylists</p>
+                <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+                  <select
+                    value={feedBrand}
+                    onChange={(e) => {
+                      setFeedBrand(e.target.value);
+                      fetchFeed(e.target.value, feedShade);
+                    }}
+                    style={{ padding: '8px', fontSize: '13px' }}
+                  >
+                    <option value="All">All Brands</option>
+                    {DEFAULT_BRANDS.map((b) => (
+                      <option key={b} value={b}>{b}</option>
+                    ))}
+                  </select>
+                  <input
+                    type="text"
+                    placeholder="Filter by shade..."
+                    value={feedShade}
+                    onChange={(e) => {
+                      setFeedShade(e.target.value);
+                      fetchFeed(feedBrand, e.target.value);
+                    }}
+                    style={{ flex: 1, padding: '8px', fontSize: '13px' }}
+                  />
+                </div>
                 {feedLoading ? (
                   <div className="loading">Loading feed...</div>
                 ) : feedNotes.length === 0 ? (
