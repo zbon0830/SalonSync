@@ -297,3 +297,53 @@ def test_search_brand_filter(client, auth_header):
 
     notes = client.get("/api/notes?brand=All", headers=auth_header).get_json()["notes"]
     assert len(notes) == 2
+
+
+def test_share_note_toggle_success(client, auth_header):
+    """US-8: Owner can toggle a note from private to public and back."""
+    note = create_note(client, auth_header, title="Shareable Formula", is_public=False)
+    assert note["is_public"] is False
+
+    # Share publicly
+    res = client.patch(f"/api/notes/{note['id']}/share", json={"is_public": True}, headers=auth_header)
+    assert res.status_code == 200
+    data = res.get_json()
+    assert data["message"] == "Note share status updated"
+    assert data["note"]["is_public"] is True
+
+    # Unshare (make private again)
+    res2 = client.patch(f"/api/notes/{note['id']}/share", json={"is_public": False}, headers=auth_header)
+    assert res2.status_code == 200
+    assert res2.get_json()["note"]["is_public"] is False
+
+
+def test_share_note_other_user_forbidden(client, auth_header):
+    """US-8: Another user cannot toggle share on someone else's note."""
+    note = create_note(client, auth_header, title="Private Formula")
+    other_header = make_auth_header(client, "other_stylist_us8")
+
+    res = client.patch(f"/api/notes/{note['id']}/share", json={"is_public": True}, headers=other_header)
+    assert res.status_code == 403
+
+    # Verify original owner's note remains private
+    owner_notes = client.get("/api/notes", headers=auth_header).get_json()["notes"]
+    target = [n for n in owner_notes if n["id"] == note["id"]]
+    assert len(target) == 1
+    assert target[0]["is_public"] is False
+
+
+def test_share_note_missing_body(client, auth_header):
+    """US-8: Missing is_public field returns 400."""
+    note = create_note(client, auth_header, title="No Body Share")
+
+    res = client.patch(f"/api/notes/{note['id']}/share", json={}, headers=auth_header)
+    assert res.status_code == 400
+    assert "is_public" in res.get_json()["error"].lower()
+
+
+def test_share_note_unauthenticated(client, auth_header):
+    """US-8: Unauthenticated request to share endpoint returns 401."""
+    note = create_note(client, auth_header, title="Unauth Share")
+
+    res = client.patch(f"/api/notes/{note['id']}/share", json={"is_public": True})
+    assert res.status_code == 401
