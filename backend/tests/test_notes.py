@@ -392,3 +392,19 @@ def test_feed_ordered_newest_first(client, auth_header):
     public_titles = [n["title"] for n in notes if n["title"] in ("Older Public", "Newer Public")]
     assert public_titles[0] == "Newer Public"
     assert public_titles[1] == "Older Public"
+
+
+def test_feed_filter_by_brand(client, auth_header):
+    create_note(client, auth_header, title="Redken Public", brand="Redken", is_public=True)
+    create_note(client, auth_header, title="Wella Public", brand="Wella", is_public=True)
+
+    notes = client.get("/api/notes/feed?brand=Wella").get_json()["notes"]
+    assert [n["title"] for n in notes] == ["Wella Public"]
+
+
+def test_feed_filter_by_shade(client, auth_header):
+    create_note(client, auth_header, title="Ash Public", shades="7A", is_public=True)
+    create_note(client, auth_header, title="Gold Public", shades="8G", is_public=True)
+
+    notes = client.get("/api/notes/feed?shade=8g").get_json()["notes"]
+    assert [n["title"] for n in notes] == ["Gold Public"]
