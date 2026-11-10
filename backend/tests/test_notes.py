@@ -347,3 +347,48 @@ def test_share_note_unauthenticated(client, auth_header):
 
     res = client.patch(f"/api/notes/{note['id']}/share", json={"is_public": True})
     assert res.status_code == 401
+
+
+def test_feed_returns_only_public_notes(client, auth_header):
+    """US-9: Feed returns only notes with is_public=True."""
+    # Create private note
+    create_note(client, auth_header, title="Private Formula", is_public=False)
+    # Create public note
+    create_note(client, auth_header, title="Public Formula", is_public=True)
+
+    res = client.get("/api/notes/feed")
+    assert res.status_code == 200
+    notes = res.get_json()["notes"]
+    assert len(notes) >= 1
+    for n in notes:
+        assert n["is_public"] is True
+    titles = [n["title"] for n in notes]
+    assert "Public Formula" in titles
+    assert "Private Formula" not in titles
+
+def test_feed_no_auth_required(client):
+    """US-9: Feed endpoint does not require authentication."""
+    res = client.get("/api/notes/feed")
+    assert res.status_code == 200
+    assert "notes" in res.get_json()
+
+def test_feed_empty_when_no_public_notes(client, auth_header):
+    """US-9: Feed returns empty list when no notes are public."""
+    create_note(client, auth_header, title="Only Private", is_public=False)
+
+    res = client.get("/api/notes/feed")
+    assert res.status_code == 200
+    assert res.get_json()["notes"] == []
+
+def test_feed_ordered_newest_first(client, auth_header):
+    """US-9: Feed returns notes ordered by created_at descending."""
+    import time
+    create_note(client, auth_header, title="Older Public", is_public=True)
+    time.sleep(0.1)
+    create_note(client, auth_header, title="Newer Public", is_public=True)
+
+    res = client.get("/api/notes/feed")
+    notes = res.get_json()["notes"]
+    public_titles = [n["title"] for n in notes if n["title"] in ("Older Public", "Newer Public")]
+    assert public_titles[0] == "Newer Public"
+    assert public_titles[1] == "Older Public"

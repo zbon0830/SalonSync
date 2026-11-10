@@ -57,7 +57,25 @@ export default function App() {
 
   // Field validation errors
   const [fieldErrors, setFieldErrors] = useState({});
+  const [feedNotes, setFeedNotes] = useState([]);
+  const [feedLoading, setFeedLoading] = useState(false);
+  const [currentView, setCurrentView] = useState('my-notes');
 
+
+  const fetchFeed = async () => {
+    setFeedLoading(true);
+    try {
+      const res = await fetch('/api/notes/feed');
+      if (res.ok) {
+        const data = await res.json();
+        setFeedNotes(data.notes || []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch feed:', err);
+    } finally {
+      setFeedLoading(false);
+    }
+  };
   useEffect(() => {
     if (token) {
       fetchUser(token);
@@ -550,7 +568,42 @@ export default function App() {
             </div>
           )}
 
-          {/* Notes List View */}
+          
+            {currentView === 'feed' && (
+              <div className="feed-view">
+                <h2>Community Formula Feed</h2>
+                <p className="feed-subtitle">Discover techniques shared by other stylists</p>
+                {feedLoading ? (
+                  <div className="loading">Loading feed...</div>
+                ) : feedNotes.length === 0 ? (
+                  <div className="empty-state">No public formulas shared yet. Be the first!</div>
+                ) : (
+                  <div className="notes-grid">
+                    {feedNotes.map((n) => (
+                      <div key={n.id} className="note-card note-card-public">
+                        <div className="note-header">
+                          <h3>{n.title}</h3>
+                          <span className="badge badge-public">Public</span>
+                        </div>
+                        <div className="note-meta">
+                          <span className="note-author">by {n.author_username}</span>
+                          <span className="note-date">{new Date(n.created_at).toLocaleDateString()}</span>
+                        </div>
+                        <div className="note-details">
+                          <div><strong>Brand:</strong> {n.brand}</div>
+                          <div><strong>Shades:</strong> {n.shades}</div>
+                          <div><strong>Developer:</strong> {n.developer}</div>
+                          <div><strong>Processing:</strong> {n.processing_time} min</div>
+                        </div>
+                        {n.notes && <div className="note-instructions"><strong>Notes:</strong> {n.notes}</div>}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Notes List View */}
           <div style={{ marginTop: '16px' }}>
             <h2 style={{ fontSize: '15px', color: '#2d3748', marginBottom: '8px' }}>
               Formula Notes ({notes.length})

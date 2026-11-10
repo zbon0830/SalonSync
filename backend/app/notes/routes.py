@@ -245,3 +245,12 @@ def toggle_share(current_user, note_id):
         "message": "Note share status updated",
         "note": note.to_dict()
     }), 200
+
+
+@notes.get("/feed")
+def get_public_feed():
+    """US-9: Return all publicly shared notes, newest first."""
+    public_notes = Note.query.filter_by(is_public=True).order_by(Note.created_at.desc()).all()
+    return jsonify({
+        "notes": [n.to_dict() for n in public_notes]
+    }), 200
