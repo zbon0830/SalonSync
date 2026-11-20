@@ -387,6 +387,35 @@ export default function App() {
     }
   };
 
+const handleModeratorDelete = async (noteId) => {
+    if (!window.confirm('MODERATOR: Are you sure you want to remove this note?')) {
+      return;
+    }
+
+    setErrorMessage('');
+    setSuccessMessage('');
+
+    try {
+      const response = await fetch(`/api/notes/${noteId}/moderate`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setErrorMessage(data.error || 'Failed to remove note.');
+      } else {
+        setSuccessMessage('MODERATOR: Note removed successfully.');
+        setFeedNotes(feedNotes.filter((n) => n.id !== noteId));
+      }
+    } catch (err) {
+      setErrorMessage('Network error: unable to remove note.');
+    }
+  };
+
   const handleEditClick = (note) => {
     setEditingNoteId(note.id);
     setNoteTitle(note.title);
@@ -657,6 +686,18 @@ export default function App() {
                           <div><strong>Processing:</strong> {n.processing_time} min</div>
                         </div>
                         {n.notes && <div className="note-instructions"><strong>Notes:</strong> {n.notes}</div>}
+                        {currentUser?.role === 'moderator' && (
+                          <div style={{ marginTop: '8px', display: 'flex', justifyContent: 'flex-end' }}>
+                            <button
+                              type="button"
+                              className="btn-secondary"
+                              style={{ padding: '2px 8px', fontSize: '12px', color: '#c53030' }}
+                              onClick={() => handleModeratorDelete(n.id)}
+                            >
+                              Remove Note
+                            </button>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>

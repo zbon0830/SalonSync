@@ -261,3 +261,20 @@ def get_public_feed():
     return jsonify({
         "notes": [n.to_dict() for n in public_notes]
     }), 200
+
+@notes.delete("/<int:note_id>/moderate")
+@token_required
+def moderate_delete_note(current_user, note_id):
+    if current_user.role != "moderator":
+        return jsonify({"error": "Unauthorized access"}), 403
+
+    note = Note.query.get_or_404(note_id)
+
+    try:
+        db.session.delete(note)
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        return jsonify({"error": "An error occurred while removing the note"}), 500
+
+    return jsonify({"message": "MODERATOR: Note removed successfully"}), 200
