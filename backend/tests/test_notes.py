@@ -583,3 +583,9 @@ def test_moderator_toggle_hide_validation(client, auth_header, moderator_auth_he
     # Nonexistent note
     res_404 = client.patch("/api/notes/999999/moderate", json={"is_hidden": True}, headers=moderator_auth_header)
     assert res_404.status_code == 404
+
+
+def test_moderator_remove_unauthenticated(client, auth_header):
+    note = create_note(client, auth_header, title="Unauth Moderate", is_public=True)
+    res = client.patch(f"/api/notes/{note['id']}/moderate", json={"is_hidden": True})
+    assert res.status_code == 401
